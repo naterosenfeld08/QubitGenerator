@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resonator-gen"
+version = "0.1.0"
+description = "Parametric CPW readout resonators on top of KQCircuits"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "QubitGenerator" }]
+dependencies = [
+    "kqcircuits>=4.9.11,<4.10",
+    "klayout>=0.28",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pydantic>=2.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+resonator-build-chip = "resonator_gen.cli:build_chip_main"
+resonator-sweep-lengths = "resonator_gen.cli:sweep_lengths_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = ["ignore::DeprecationWarning"]

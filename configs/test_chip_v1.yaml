@@ -1,0 +1,85 @@
+name: test_chip_v1
+cpw:
+  width_um: 10.0
+  gap_um: 6.0
+  bend_radius_um: 100.0
+  pitch_um: 100.0
+calibration:
+  eps_eff: 6.35
+  substrate_eps_r: 11.9
+  coupler_dL_um: 0.0
+constraints:
+  radius_ratio_min: 3.0
+  pitch_ratio_min: 3.0
+  hard_fail: false
+feedline:
+  path_um:
+    - [0.0, 0.0]
+    - [8000.0, 0.0]
+resonators:
+  - name: R0
+    frequency_hz: 4.0e9
+    mode: quarter
+    geometry: meander
+    termination: short
+    bend_radius_um: 100
+    pitch_um: 100
+    coupler:
+      topology: finger
+      finger_number: 5
+      finger_width_um: 5
+      finger_gap_um: 3
+      finger_length_um: 20
+    placement:
+      x_um: 1000
+      y_um: 0
+      orientation_deg: 90
+      meander_span_um: 1200
+  - name: R1
+    frequency_hz: 4.5e9
+    mode: quarter
+    geometry: meander
+    termination: short
+    coupler:
+      topology: finger
+      finger_number: 5
+      finger_width_um: 5
+      finger_gap_um: 3
+      finger_length_um: 20
+    placement:
+      x_um: 2500
+      y_um: 0
+      orientation_deg: 90
+      meander_span_um: 1200
+  - name: R2
+    frequency_hz: 5.0e9
+    mode: quarter
+    geometry: meander
+    termination: short
+    coupler:
+      topology: finger
+      finger_number: 5
+      finger_width_um: 5
+      finger_gap_um: 3
+      finger_length_um: 20
+    placement:
+      x_um: 4000
+      y_um: 0
+      orientation_deg: 90
+      meander_span_um: 1200
+  - name: R3
+    frequency_hz: 5.5e9
+    mode: quarter
+    geometry: meander
+    termination: short
+    coupler:
+      topology: finger
+      finger_number: 5
+      finger_width_um: 5
+      finger_gap_um: 3
+      finger_length_um: 20
+    placement:
+      x_um: 5500
+      y_um: 0
+      orientation_deg: 90
+      meander_span_um: 1200
