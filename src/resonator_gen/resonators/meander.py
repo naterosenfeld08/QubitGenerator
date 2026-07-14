@@ -121,7 +121,9 @@ class MeanderResonator:
         top.insert(pya.DCellInstArray(coupler_cell.cell_index(), coupler_trans))
 
         # Meander starts after a short lead beyond the coupler.
-        lead_um = 50.0
+        from resonator_gen.constants import COUPLER_LEAD_UM
+
+        lead_um = COUPLER_LEAD_UM
         start_local = (lead_um + self.coupler.physical_length_um() + cross.width_um, 0.0)
         end_local = (start_local[0] + span, 0.0)
         start_xy = transform(*start_local)
@@ -219,6 +221,8 @@ class MeanderResonator:
                 f"body length {budget.body_length_um:.3f} µm < meander_span_um={span}"
             )
 
+        from resonator_gen.constants import COUPLER_LEAD_UM
+
         coupler_cell = self.coupler.build(parent.layout, cross)
         parent.insert_cell(
             coupler_cell,
@@ -228,7 +232,7 @@ class MeanderResonator:
 
         angle_rad = math.radians(place.orientation_deg)
         cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-        lead_um = 50.0 + self.coupler.physical_length_um() + cross.width_um
+        lead_um = COUPLER_LEAD_UM + self.coupler.physical_length_um() + cross.width_um
 
         def xf(x: float, y: float = 0.0) -> list[float]:
             return [

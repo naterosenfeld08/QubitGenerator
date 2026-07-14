@@ -56,8 +56,19 @@ class SpiralResonator:
         cpw: CpwConfig,
         *,
         constraints: ConstraintsConfig | None = None,
+        corridor_um: tuple[float, float] | None = None,
     ) -> ResonatorBuildResult:
-        """Build spiral + coupler into a top-level group cell."""
+        """Build spiral + coupler into a top-level group cell.
+
+        Parameters
+        ----------
+        corridor_um :
+            Optional ``(length, width)`` of the auto-placed corridor (µm).
+            When given, the spiral polygon is sized to fit inside it; when
+            None, legacy fixed spaces are used (manual mode).
+        """
+        import math
+
         from kqcircuits.elements.spiral_resonator_polygon import (
             SpiralResonatorPolygon,
             rectangular_parameters,
@@ -83,25 +94,43 @@ class SpiralResonator:
         top.insert(pya.DCellInstArray(coupler_cell.cell_index(), coupler_trans))
 
         kqc = cross.as_kqc_kwargs()
-        params = rectangular_parameters(
-            above_space=500,
-            below_space=400,
-            right_space=max(800.0, place.meander_span_um * 0.75),
-            x_spacing=pitch,
-            y_spacing=pitch,
-            r=radius,
-            length=float(budget.body_length_um),
-            a=kqc["a"],
-            b=kqc["b"],
-        )
+        footprint_um = cross.width_um + 2.0 * cross.gap_um
+        if corridor_um is not None:
+            corridor_length_um, corridor_width_um = corridor_um
+            half = max(radius, corridor_width_um / 2.0 - footprint_um / 2.0)
+            params = rectangular_parameters(
+                above_space=half,
+                below_space=half,
+                right_space=max(2.0 * radius, corridor_length_um - footprint_um / 2.0),
+                x_spacing=pitch,
+                y_spacing=pitch,
+                r=radius,
+                length=float(budget.body_length_um),
+                a=kqc["a"],
+                b=kqc["b"],
+            )
+        else:
+            params = rectangular_parameters(
+                above_space=500,
+                below_space=400,
+                right_space=max(800.0, place.meander_span_um * 0.75),
+                x_spacing=pitch,
+                y_spacing=pitch,
+                r=radius,
+                length=float(budget.body_length_um),
+                a=kqc["a"],
+                b=kqc["b"],
+            )
         spiral_cell = SpiralResonatorPolygon.create(layout, **params)
+        lead_um = 100.0 + self.coupler.physical_length_um()
+        angle_rad = math.radians(place.orientation_deg)
         spiral_trans = pya.DCplxTrans(
             1.0,
             place.orientation_deg,
             False,
             pya.DVector(
-                place.x_um + 100.0 + self.coupler.physical_length_um(),
-                place.y_um,
+                place.x_um + lead_um * math.cos(angle_rad),
+                place.y_um + lead_um * math.sin(angle_rad),
             ),
         )
         top.insert(pya.DCellInstArray(spiral_cell.cell_index(), spiral_trans))
