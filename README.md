@@ -60,9 +60,9 @@ Ensure headless `resonator_gen` is importable from KLayout’s Python (same env 
 
 | Parameter | Default |
 |-----------|---------|
-| CPW `w` / `g` | 10 µm / 6 µm |
-| Bend radius | 100 µm |
-| Pitch | 100 µm |
+| CPW `w` / `g` | 30 µm / 20 µm |
+| Bend radius | 220 µm |
+| Pitch | 220 µm |
 | `eps_eff` | 6.35 (matches 4.0–5.5 GHz table) |
 | Mode | λ/4 (`quarter`) |
 | Coupler | capacitive finger |
@@ -74,6 +74,16 @@ Ensure headless `resonator_gen` is importable from KLayout’s Python (same env 
 python -m pytest -q
 ```
 
+## EM simulation (Cooper chip)
+
+Requires [Elmer](https://www.csc.fi/web/elmer) (`sudo port install elmerfem` on MacPorts) and `gmsh` (`pip install gmsh`). Run the full readout report:
+
+```bash
+python scripts/sim/cooper_chip_report.py
+```
+
+Output: `out/sim/cooper_readout_report.md` (island C_Σ, CPW Z₀, readout C_m, f_r, Q_c, g, χ).
+
 ## Non-goals (v1)
 
-EM simulation export, qubit/junction layout, automatic area vs coupling optimization.
+Automatic area vs coupling optimization. Full-chip 3-D eigenmode (VectorHelmholtz) is deferred; v1 uses Elmer electrostatics + lumped readout model.

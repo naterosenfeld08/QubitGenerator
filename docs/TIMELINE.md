@@ -130,3 +130,26 @@ The metal view also clarified the coupling: three resonators run their center co
 Per the user's confirmed choices (single-island transmon; separate capacitive readout tap per resonator), added `scripts/build_cooper_qubits.py`, which builds the transmon in negative tone: a 55 µm island (reference dimensions) isolated by a 20 µm gap moat, connected to the resonator claw's center conductor, and grounded through a 30×5 µm neck ending in a Josephson junction. The JJ is placed on a **dedicated layer (2/0)** as small bridging leads, since a real junction is a separate fabrication step rather than part of the base etch mask (the 2 µm placeholder size ultimately sets the qubit frequency and is defined by e-beam). Built the **bottom-right** transmon as the validated template, then rolled out to all four. Because the three flush resonators are identical meanders up to an x-translation, the completed bottom-right claw+qubit unit (five gap polygons + the JJ leads) is replicated onto each: the meander is first pulled back 132 µm (a rigid translation — preserves length) to open the qubit gap, then a transformed copy of the unit is dropped at its coupling end (plain x-translation for the bottom pair; mirrored about the feedline midline y=53.5 for the top pair). Per the user's decision, exact frequency retuning is deferred to the Phase-3 simulation (rerouting the coupling end shifts each resonator's frequency, to be measured and corrected then).
 
 Verified the result (`QubitFinalCooperGroup_qubits.gds`): all four resonators intact with coupling-arm tips symmetric at ±132 µm from the feedline, four JJ pairs present, and — the key physics check — each qubit island is a metal net isolated from the ground plane, connected only through its Josephson junction (confirmed by connected-component containment tests on the inverted metal). Still pending: dedicated resonator→feedline readout taps, and exact JJ/frequency tuning under simulation.
+
+## 17. Cooper chip Elmer readout simulations (Phase 3)
+
+With `elmerfem` installed (MacPorts), stood up a KQCircuits→Elmer simulation pipeline under `scripts/sim/`:
+
+- `_toolchain_test.py` — two-pad capacitance sanity check (verified end-to-end).
+- `transmon_island_cap.py` — island self-capacitance → **C_Σ = 24.7 fF**, **E_C/h ≈ 785 MHz**.
+- `cpw_cross_section.py` — 2-D cross-sections: resonator 30/20 µm (**Z₀ ≈ 52 Ω**, **ε_eff ≈ 6.18**); feedline 25/42 µm (**Z₀ ≈ 68 Ω**).
+- `readout_coupling_cap.py` — mutual capacitance between finite feed/res islands at 132 µm separation → **C_m ≈ 13.7 fF**.
+- `cooper_chip_report.py` — orchestrates cached Elmer batches in `out/sim/elmer/` and writes `out/sim/cooper_readout_report.md` + JSON.
+
+**Readout-chain summary (lumped model on Elmer inputs, E_J = 20 GHz placeholder):**
+
+| Quantity | R0 (4 GHz target) |
+|----------|-------------------|
+| f_r (sim, claw +180 µm) | 3.91 GHz |
+| Q_c (C_res/C_m) | ≈ 29 |
+| κ/2π | ≈ 137 MHz |
+| f_q | ≈ 5.6 GHz |
+| g/2π | ≈ 139 MHz |
+| χ/2π | ≈ 11 MHz |
+
+Resonator frequencies are ~2% low vs targets after claw reroute (tune meander length or ε_eff in a follow-up). Full 3-D VectorHelmholtz eigenmode not yet run; report uses length-based f_r. Re-run: `python scripts/sim/cooper_chip_report.py`.
