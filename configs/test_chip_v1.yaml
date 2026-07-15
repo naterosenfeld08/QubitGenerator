@@ -1,9 +1,10 @@
 name: test_chip_v1
 cpw:
-  width_um: 10.0
-  gap_um: 6.0
-  bend_radius_um: 100.0
-  pitch_um: 100.0
+  width_um: 30.0
+  gap_um: 20.0
+  # Floor is radius_ratio_min * (w + 2g) = 3 * 70 = 210 µm; kept a small margin above it.
+  bend_radius_um: 220.0
+  pitch_um: 220.0
 calibration:
   eps_eff: 6.35
   substrate_eps_r: 11.9
@@ -15,15 +16,21 @@ constraints:
 feedline:
   path_um:
     - [0.0, 0.0]
-    - [8000.0, 0.0]
+    - [9800.0, 0.0]
 resonators:
+  # Anchors below clear two existing base-chip features (see docs/TIMELINE.md):
+  # the old hand-drawn meander at x=[400,1700] y=[-330,465], and a vertical
+  # feed trace at x=[1630,1700] running from y=460 up to the chip's top edge.
+  # meander_span_um=2000 keeps each meander's fold count symmetric (avoids a
+  # degenerate one-sided bounding box when bend_radius grows), and x_um values
+  # keep every resonator's ±reach fully clear of x<1700 and of each other.
   - name: R0
     frequency_hz: 4.0e9
     mode: quarter
     geometry: meander
     termination: short
-    bend_radius_um: 100
-    pitch_um: 100
+    bend_radius_um: 220
+    pitch_um: 220
     coupler:
       topology: finger
       finger_number: 5
@@ -31,10 +38,10 @@ resonators:
       finger_gap_um: 3
       finger_length_um: 20
     placement:
-      x_um: 1000
+      x_um: 2950
       y_um: 0
       orientation_deg: 90
-      meander_span_um: 1200
+      meander_span_um: 2600
   - name: R1
     frequency_hz: 4.5e9
     mode: quarter
@@ -47,10 +54,10 @@ resonators:
       finger_gap_um: 3
       finger_length_um: 20
     placement:
-      x_um: 2500
+      x_um: 5200
       y_um: 0
       orientation_deg: 90
-      meander_span_um: 1200
+      meander_span_um: 2000
   - name: R2
     frequency_hz: 5.0e9
     mode: quarter
@@ -63,10 +70,10 @@ resonators:
       finger_gap_um: 3
       finger_length_um: 20
     placement:
-      x_um: 4000
+      x_um: 7200
       y_um: 0
       orientation_deg: 90
-      meander_span_um: 1200
+      meander_span_um: 2000
   - name: R3
     frequency_hz: 5.5e9
     mode: quarter
@@ -79,7 +86,7 @@ resonators:
       finger_gap_um: 3
       finger_length_um: 20
     placement:
-      x_um: 5500
+      x_um: 9000
       y_um: 0
       orientation_deg: 90
-      meander_span_um: 1200
+      meander_span_um: 2000

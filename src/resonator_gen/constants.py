@@ -10,12 +10,15 @@ from __future__ import annotations
 C_MPS: float = 299_792_458.0
 
 # Default CPW cross-section (µm). Matches KQCircuits Element a/b defaults.
-DEFAULT_CPW_WIDTH_UM: float = 10.0
-DEFAULT_CPW_GAP_UM: float = 6.0
+# Center-conductor width 30 µm, gap 20 µm each side (70 µm total groove-to-groove).
+DEFAULT_CPW_WIDTH_UM: float = 30.0
+DEFAULT_CPW_GAP_UM: float = 20.0
 
-# Default bend radius and meander pitch (µm).
-DEFAULT_BEND_RADIUS_UM: float = 100.0
-DEFAULT_PITCH_UM: float = 100.0
+# Default bend radius and meander pitch (µm). Kept >= radius/pitch_ratio_min *
+# (w + 2g) = 3 * 70 = 210 µm with margin, since the electrical (centerline)
+# length -- and therefore the target frequency -- is independent of w/g/r.
+DEFAULT_BEND_RADIUS_UM: float = 220.0
+DEFAULT_PITCH_UM: float = 220.0
 
 # Soft design-rule multipliers vs. (w + 2·g).
 DEFAULT_RADIUS_RATIO_MIN: float = 3.0
