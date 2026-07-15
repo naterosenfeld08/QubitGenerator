@@ -90,6 +90,42 @@ def build_transmon_left(claw: ClawEnd, dbu: float) -> tuple[pya.Region, pya.Regi
     return gap, jj
 
 
+# Feedline gap outer edges (um): lower gap [7,32], upper gap [75,100]; the CPW
+# is symmetric about y = 53.5.
+FEED_MID = 53.5
+
+# Resonators are identical meanders up to an x-translation. Each entry gives the
+# resonator's center-conductor x-center and the bbox-top used to identify it.
+# `above` = resonator sits above the feedline (arm points down).
+# The bottom-right (x_center 4751, arm already pulled back) is the template.
+BR_X_CENTER = 4751.0
+PULLBACK = 132.0  # move each flush resonator this far from the feedline
+
+RESONATORS = [
+    # (name, bbox_top_um, x_center, above)
+    ("bottom_left", 7.0, 2950.0, False),
+    ("top_left", 2700.0, 2950.0, True),
+    ("top_right", 2100.0, 5200.0, True),
+]
+
+# Bounding box (um) enclosing exactly the bottom-right claw+qubit unit on 1/0.
+_UNIT_BOX_UM = (4490.0, -130.0, 4790.0, -10.0)
+
+
+def _unit_polygons(top: pya.Cell, li_gap: int, li_jj: int, dbu: float):
+    """Collect the bottom-right claw+qubit polygons (gap + JJ) to replicate."""
+    x1, y1, x2, y2 = _UNIT_BOX_UM
+    sel = pya.Box(round(x1 / dbu), round(y1 / dbu), round(x2 / dbu), round(y2 / dbu))
+    gap_polys = []
+    for s in top.shapes(li_gap).each():
+        if sel.contains(s.bbox().p1) and sel.contains(s.bbox().p2):
+            poly = s.polygon or s.simple_polygon
+            if poly is not None:
+                gap_polys.append(poly.dup())
+    jj_polys = [(s.polygon or s.simple_polygon).dup() for s in top.shapes(li_jj).each()]
+    return gap_polys, jj_polys
+
+
 def build(input_path: Path, output_path: Path) -> None:
     layout = pya.Layout()
     layout.read(str(input_path))
@@ -98,16 +134,47 @@ def build(input_path: Path, output_path: Path) -> None:
     li_gap = layout.layer(pya.LayerInfo(*GAP_LAYER))
     li_jj = layout.layer(pya.LayerInfo(*JJ_LAYER))
 
-    # Bottom-right claw: center conductor y in [-76, -41], open end faces -x at x=4604.
+    def um(v: float) -> int:
+        return round(v / dbu)
+
+    # 1) Complete the bottom-right transmon (its claw arc+leads already exist).
     br = ClawEnd(x_end=4604.0, cc_lo=-76.0, cc_hi=-41.0)
     gap, jj = build_transmon_left(br, dbu)
-
     top.shapes(li_gap).insert(gap)
     top.shapes(li_jj).insert(jj)
 
+    # 2) Snapshot the completed bottom-right claw+qubit unit for replication.
+    unit_gap, unit_jj = _unit_polygons(top, li_gap, li_jj, dbu)
+
+    # 3) Reroute the other three: pull each meander back to create the qubit gap,
+    #    then drop a transformed copy of the unit at its coupling end.
+    for name, bbox_top, x_center, above in RESONATORS:
+        dx = um(x_center - BR_X_CENTER)
+        if above:
+            # Pull up, and mirror the (below-feedline) unit about y = FEED_MID.
+            meander_trans = pya.Trans(0, False, 0, um(+PULLBACK))
+            unit_trans = pya.Trans(0, True, dx, um(2 * FEED_MID))
+        else:
+            meander_trans = pya.Trans(0, False, 0, um(-PULLBACK))
+            unit_trans = pya.Trans(0, False, dx, 0)
+
+        # Translate the two meander polygons for this resonator (identified by bbox top).
+        for s in list(top.shapes(li_gap).each()):
+            bb = s.bbox()
+            poly = s.polygon or s.simple_polygon
+            if poly is None or poly.num_points() < 100:
+                continue
+            if abs(bb.top * dbu - bbox_top) <= 0.2:
+                top.shapes(li_gap).replace(s, poly.transformed(meander_trans))
+
+        for poly in unit_gap:
+            top.shapes(li_gap).insert(poly.transformed(unit_trans))
+        for poly in unit_jj:
+            top.shapes(li_jj).insert(poly.transformed(unit_trans))
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     layout.write(str(output_path))
-    print(f"Added bottom-right transmon; wrote {output_path}")
+    print(f"Built 4 transmons (bottom-right template + 3 replicas); wrote {output_path}")
 
 
 def main(argv: list[str] | None = None) -> int:
