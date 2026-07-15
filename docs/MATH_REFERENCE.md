@@ -228,7 +228,19 @@ $$
 
 where $\Gamma(R_i)$ is the union of the gap layer and ground-grid-avoidance layer regions of the built cell for $R_i$. Resonator $R_{i}$ is placed against $\Omega^{(i-1)}(\delta_i) = D \setminus \left(K^{(i-1)} \oplus B_{\delta_i}\right)$, guaranteeing order-dependent but fully deterministic, non-overlapping results.
 
-## 9. Verification tolerances (summary table)
+## 9. Manual-mode bounding-box symmetry vs. fold count
+
+For manual placement, the corridor length available to the meander is `meander_span_um`, denoted $\ell$ here (same $\ell$ as §4, §7). The realized fold count is
+
+$$
+N(\ell, r) = N_{\text{auto}}(\ell, r) = \left\lfloor \frac{\ell}{2r} \right\rfloor - 1 .
+$$
+
+For $N \ge 2$, KQCircuits' `Meander` folds symmetrically about the straight-line axis, giving a bounding box of transverse half-width $\approx w^\star/2$ on each side. For $N = 1$, the geometry degenerates to a **one-sided** fold: essentially all of $w^\star$ appears on one side of the axis and a small residual ($\approx w_{\mathrm{cpw}}/2$) on the other. This is a real, load-bearing geometric fact about the installed KQCircuits release (verified in `tests/test_anchored_placement.py::test_meander_width_parity_with_kqc`), not an artifact of this library.
+
+Consequence: increasing bend radius $r$ without a compensating increase in $\ell$ can silently push $N(\ell, r)$ from $\ge 2$ down to $1$, converting a compact symmetric footprint into a lopsided one with several times the transverse reach on one side — encountered in practice when the CPW footprint $F = w_{\mathrm{cpw}} + 2g$ grew and $r$ was raised to satisfy $r \ge \kappa F$ (§5) while $\ell$ was left unchanged. The fix is to size $\ell$ (i.e. `meander_span_um`) jointly with $r$ so that $N(\ell, r) \ge 2$, rather than treating them independently.
+
+## 10. Verification tolerances (summary table)
 
 | Check | Tolerance | Rationale |
 |---|---|---|

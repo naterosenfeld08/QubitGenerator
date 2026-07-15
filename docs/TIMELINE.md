@@ -89,3 +89,19 @@ Final state: **49 tests passing**, auto-placed sample chip built to `out/test_ch
 ## 13. Documentation and commit
 
 Added this timeline document and a companion mathematical/engineering reference (`docs/MATH_REFERENCE.md`), then committed both feature additions (auto-placement) and documentation to the GitHub repository.
+
+## 14. Widening the CPW cross-section (10/6 µm → 30/20 µm) and clearing existing chip artwork
+
+Request: the fabricated trace was too thin. New target cross-section: 30 µm center conductor, 20 µm gap each side (70 µm groove-to-groove), without changing any of the four resonator frequencies.
+
+Changed `DEFAULT_CPW_WIDTH_UM`/`DEFAULT_CPW_GAP_UM` in `constants.py` and the `cpw:` block in `configs/test_chip_v1.yaml` from 10/6 µm to 30/20 µm. This is safe by construction: electrical length depends only on the centerline (`Σs + Σrθ`) and `eps_eff`, never on `w`, `g`, or bend radius — confirmed by rebuilding and diffing the CLI's reported target lengths before/after (identical to the nanometer for all four resonators).
+
+The wider footprint raised the design-rule floor `r, pitch ≥ 3·(w+2g)` from 66 µm to 210 µm, so `bend_radius_um`/`pitch_um` were raised 100 → 220 µm (a small margin over the new floor).
+
+Regenerating and re-merging into the user's existing base chip (`Qubit(Correct).gds`) surfaced a real geometry problem, found by exact `pya.Region` intersection (not bounding-box heuristics): the base chip already contains an old hand-drawn meander resonator (8 parallel 20 µm strips at x≈500–1600 µm) and a vertical feed trace (two 20 µm strips 30 µm apart, running from y≈460 µm to the chip's top edge at x≈1630–1700 µm) — almost certainly the original hand-drawn resonator that motivated this whole project. The larger bend radius pushed the generated meanders' bounding boxes further sideways, causing R0–R2 to newly cross this existing artwork.
+
+Root-caused the sideways growth to `meander_span_um` (the corridor length made available to the meander), not the bend radius itself: at the original `meander_span_um=1200`, KQCircuits' `Meander` only had room for a single fold (`n=1`), which produces a pathological **one-sided** bounding box (nearly all reach on one side, ~40 µm on the other) instead of the expected symmetric shape. Sweeping `meander_span_um` empirically (1200/1600/2000/2600 µm) confirmed that increasing it restores symmetric multi-fold behavior and shrinks the sideways reach substantially, independent of bend radius.
+
+Fix: raised `meander_span_um` to 2000–2600 µm per resonator and moved anchors from `x_um = 1000/2500/4000/5500` to `2950/5200/7200/9000`, extending the demo feedline from 8000 to 9800 µm to keep every coupler tap on it. Verified with exact region-intersection checks (all pairs, resonator-vs-base-chip and resonator-vs-resonator): zero overlaps. Re-ran the full test suite (49 passed) and regenerated `out/test_chip_v1.gds`, `out/Qubit_with_resonators.gds`, and `out/QubitFinal.gds`.
+
+Also established a new standing workflow at the user's request: from this point on, code changes are committed automatically (no need to ask first), and "commit" means commit → push → fetch → update this documentation, done together as one step.
