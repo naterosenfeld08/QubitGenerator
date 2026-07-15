@@ -105,3 +105,18 @@ Root-caused the sideways growth to `meander_span_um` (the corridor length made a
 Fix: raised `meander_span_um` to 2000–2600 µm per resonator and moved anchors from `x_um = 1000/2500/4000/5500` to `2950/5200/7200/9000`, extending the demo feedline from 8000 to 9800 µm to keep every coupler tap on it. Verified with exact region-intersection checks (all pairs, resonator-vs-base-chip and resonator-vs-resonator): zero overlaps. Re-ran the full test suite (49 passed) and regenerated `out/test_chip_v1.gds`, `out/Qubit_with_resonators.gds`, and `out/QubitFinal.gds`.
 
 Also established a new standing workflow at the user's request: from this point on, code changes are committed automatically (no need to ask first), and "commit" means commit → push → fetch → update this documentation, done together as one step.
+
+## 15. Cooper-group chip: grid alignment of ported resonators (Phase 1)
+
+Moved to a newer working design, `~/Desktop/Quantum Design/QubitFinalCooperGroup.gds` — a hand-ported hybrid combining `resonator_gen` meander resonators with a base chip (feedline through the chip center, four bond-pad launchers, and one partial qubit coupler). Reverse-engineered its structure from the flat single-layer (`1/0`) geometry and cross-referenced the desktop Ruby generator `build_quantum_chip.rb` (which builds the sibling `ChipDesign.gds`) to recover design intent: feedline `FEED_W=25`, `FEED_GAP=42`; resonator CPW `20/20 µm`; a reference transmon (`55 µm` island + `30×5 µm` neck + `2 µm` JJ cross + T-stub into the feedline).
+
+Diagnosis (exact polygon inspection, not bounding-box guesses): the two **top** resonators were already exact — coupling-arm tips flush on the feedline gap edge (`y=100.0`), leg centers on integer x (`2950`, `5200`). The two **bottom** resonators had picked up sub-µm fractional offsets during porting:
+
+- **bottom-left**: arm tip at `y=6.760` (should be `7.0`), legs at `x=…​.78`;
+- **bottom-right** (the one moved down to couple through a qubit rather than touch the feedline): arm tip at `y=-125.207`, legs at `x=…​.354`, so it didn't cleanly meet its on-grid coupler stub (shapes 8/9/24/25), which also still lacks a Josephson junction.
+
+Because a meander's arc vertices are irrational, snapping was done as a single **rigid integer-nanometre translation per resonator** — never vertex rounding, which would corrupt the meander and detune it. A rigid translation preserves centerline length exactly, so resonant frequencies are unchanged. Per the user's decisions: bottom-left mirror-aligned directly under the top-left resonator (`(-1.780, +0.240) µm` → legs `2915/2935/2965/2985`, tip flush at `y=7.0`); bottom-right snapped to the nearest 1 µm grid (`(-0.354, +0.207) µm` → legs `4716/4736/4766/4786`, tip `y=-125.0`).
+
+Added `scripts/align_cooper_chip.py` (identifies the two bottom resonators by bounding box, applies the rigid shifts, writes `QubitFinalCooperGroup_aligned.gds` without overwriting the original) and verified the resulting leg/tip coordinates land exactly on grid.
+
+Next phases (planned): add one transmon per resonator (island + neck + JJ + feedline stub, matching the reference qubit) and then set up an efficiency/EM simulation of the chip.
